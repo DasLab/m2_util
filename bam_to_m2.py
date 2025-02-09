@@ -44,13 +44,8 @@ def read_fasta( fasta_file ):
 ref_headers = [header.split()[0] for header in ref_headers]
 Nref = len(ref_headers)
 
-out_tag = args.out_tag
-if len( out_tag ) == 0:
-    if len( args.bam ) == 1:
-        out_tag = args.bam[0].replace('.bam.txt','').replace('.bam','').replace('.bam','')
-    else:
-        print('Supply out_tag with -o since you have multiple bam files.')
-        exit(0)
+if len(args.bam)>1 and len(args.out_tag)>1:
+    print('With multiple bam files, cannot supply --out_tag. Rerun without --out_tag and output files will have tags based on .bam files')
 
 def initialize_counts_2d( counts_2d, coverage, Nres ):
     for i in ['mut','del']:
