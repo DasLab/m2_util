@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-b','--bam', nargs='*',default='RTB010_CustomArray_PK50_1M7_BindTheFivePrimeEnd.bam.txt',help='BAM-formatted text file, Bowtie2')
 parser.add_argument('-s','--sequences_fasta','--fasta', required=True, default='pseudoknot50_puzzle_11318423.tsv.RNA_sequences.fa',help='Fasta file with DNA/RNA sequences used for Bowtie2')
 parser.add_argument('-mq','--map_quality',default=10,type=int,help='minimum Bowtie2 MAPQ to consider read')
-parser.add_argument('--mut_cutoff',type=int,default=10,help='Filter for maximum number of mut/del in read (default 0 means no filter)' )
+parser.add_argument('--mutdel_cutoff',type=int,default=10,help='Filter for maximum number of mut/del in read (default 0 means no filter)' )
 parser.add_argument('-o','--out_tag','--out_file_tag',type=str,default='',help='Tag for outfile [default: derive from first bamfile]' )
 parser.add_argument('-n','--chunk_size', default=0, type=int, help='split with this number of sequences per chunk')
 
