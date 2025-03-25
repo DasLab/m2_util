@@ -223,7 +223,7 @@ for bam in args.bam:
         if count % 1000 == 0: print('Processed %d lines...' % count)
 
         total_mutdel = len(pos['mut']) + len(pos['del'])
-        if args.mut_cutoff == 0 or total_mutdel <= args.mut_cutoff:
+        if args.mutdel_cutoff == 0 or total_mutdel <= args.mutdel_cutoff:
             count_filter += 1
             for tag1 in ['mut','del']:
                 for tag2 in ['mut','del']:
