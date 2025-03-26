@@ -76,12 +76,14 @@ def update_out_files( fids, out_tag,ref_idx, chunk_size, Nref, gzipped=True ):
             fid_1d['mutdel'].close()
             fid_coverage.close()
 
+    #TODO actually use split_tag
     split_tag=''
     if chunk_size>0 and Nref>chunk_size:
         chunk_start = ref_idx+1
         chunk_end   = min( ref_idx + chunk_size, len(ref_headers))
         split_tag='.%07d_%07d' % (chunk_start,chunk_end)
-    if ref_idx < Nref-1:
+
+    if ref_idx < Nref+1 or chunk_size==0:
         fid_2d = {}
         fid_1d = {}
         for tag1 in ['mut','del']:
