@@ -145,10 +145,10 @@ chunk_size = args.chunk_size
 for bam in args.bam:
 
     print( 'Doing BAM file %s' % bam )
-    assert( bam[-4:]=='.bam' or  bam[-4:]=='.bam' )
+    assert( bam[-4:]=='.bam' or  bam[-5:]=='.cram' )
 
     out_tag = args.out_tag
-    if len(out_tag)==0: out_tag = bam.replace('.bam','')
+    if len(out_tag)==0: out_tag = bam.replace('.bam','').replace('.cram','')
 
     command = "samtools view %s | awk '$5>=%d'" % (bam,args.map_quality )
     fid_bam = os.popen( command )
