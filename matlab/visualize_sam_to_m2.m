@@ -99,7 +99,7 @@ for i = 1:Nseq;
     % title({'Mut/del and mut/del',tag},'Interpreter','none')
     %
     
-    if ~SAVE_FIGURE & (i < Nseq); pause; end;
+    %if ~SAVE_FIGURE & (i < Nseq); pause; end;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -110,10 +110,11 @@ infile_gz = '';
 if ~exist(infile,'file')
     infile_gz = [infile,'.gz'];
     assert( exist( infile_gz,'file' ));
-    gunzip( infile_gz );
+    %system(['gunzip -k ',infile_gz] );
+    gunzip(infile_gz)
     assert( exist( infile,'file' ));
 end
 x = load( infile );
 if length(infile_gz)>0
-    delete(infile_gz);
+    delete(infile);
 end
