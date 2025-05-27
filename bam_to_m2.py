@@ -3,6 +3,7 @@ import argparse
 import os
 import shutil
 import gzip
+import re
 
 parser = argparse.ArgumentParser(
                     prog = 'bam_to_2d.py',
@@ -177,40 +178,46 @@ for bam in args.bam:
         if header != next_header: # we're ready to output the 2D stats
             while ref_headers[ref_idx] != next_header:
                 ref_idx, ref_sequence = output_to_index( ref_idx, counts_2d, coverage, fids )
+
         start_pos = int(cols[3])
         cigar = cols[5]
         signed_tmpl_len = int(cols[8])
         read = cols[9]
 
-        #########################################
-        # create alignment output seqa for read.
-        #########################################
-        # parse cigar string, e.g., "22M1I23M1D69M" => "22M 1I 23M 1D 69M"
-        cpos = 0 # cigar position
-        spos = 0 # sequence position
         seqa = ''
-        seqa += '.'*(start_pos-1)
-        for k,s in enumerate(cigar):
-            num = cigar[cpos:(k+1)]
-            if not num.isnumeric():
-                nres = int(cigar[cpos:k])
-                indelcode = cigar[k]
-                if indelcode == 'M':
-                    seqa += read[spos:(spos+nres)]
-                    spos += nres
-                elif indelcode == 'D':
-                    seqa += '-'*nres
-                    spos += 0
-                elif indelcode == 'I':
-                    spos += nres
-                cpos = k+1 # advance to next chunk of cigar string
+        read_pos = 0  # position in read
+        seqa += '.' * (start_pos - 1)  # pad start
+
+        # Parse CIGAR with regex: [('22', 'M'), ('1', 'I'), ...]
+        cigar_tuples = re.findall(r'(\d+)([MIDNSHP=X])', cigar)
+
+        for length_str, op in cigar_tuples:
+            length = int(length_str)
+            if op == 'M':  # match or mismatch
+                seqa += read[read_pos:read_pos + length]
+                read_pos += length
+            elif op == 'I':  # insertion to the reference — skip, not in alignment
+                read_pos += length
+            elif op == 'D':  # deletion from the reference — gap in read
+                seqa += '-' * length
+            elif op == 'S':  # soft clip — skip bases in read
+                read_pos += length
+            elif op == 'H':  # hard clip — ignore entirely
+                continue
+            elif op == 'N':  # skipped region — typically introns, same as D here
+                seqa += '-' * length
+            # P (padding) and others are rarely used; can be ignored or handled as needed
+
         assert(len(seqa) <= len(ref_sequence))
         end_pos = len(seqa)
+
+        # Ensure full alignment length
         if signed_tmpl_len < 0:
-            seqa = '.'*(len(ref_sequence)-len(seqa)) + seqa
+            seqa = '.' * (len(ref_sequence) - len(seqa)) + seqa
         else:
-            seqa = seqa + '.'*(len(ref_sequence)-len(seqa))
-        assert(len(seqa)==len(ref_sequence))
+            seqa = seqa + '.' * (len(ref_sequence) - len(seqa))
+
+        assert( len(seqa) == len(ref_sequence) )
 
         pos = {}
         pos['mut'] = []
@@ -222,7 +229,7 @@ for bam in args.bam:
             elif nt_pair[0] != nt_pair[1]: pos['mut'].append(n)
 
         count += 1
-        if count % 1000 == 0: print('Processed %d lines...' % count)
+        if count % 1000 == 0: print('Processed %10d lines...' % count, '  and number that pass filter: %10d' % count_filter)
 
         total_mutdel = len(pos['mut']) + len(pos['del'])
         if args.mutdel_cutoff == 0 or total_mutdel <= args.mutdel_cutoff:
