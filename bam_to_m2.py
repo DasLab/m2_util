@@ -14,6 +14,7 @@ parser.add_argument('-b','--bam', nargs='*',default='RTB010_CustomArray_PK50_1M7
 parser.add_argument('-s','--sequences_fasta','--fasta', required=True, default='pseudoknot50_puzzle_11318423.tsv.RNA_sequences.fa',help='Fasta file with DNA/RNA sequences used for Bowtie2')
 parser.add_argument('-mq','--map_quality',default=10,type=int,help='minimum Bowtie2 MAPQ to consider read')
 parser.add_argument('--mutdel_cutoff',type=int,default=10,help='Filter for maximum number of mut/del in read (default 0 means no filter)' )
+parser.add_argument('--trim_cutoff',type=int,default=50,help='Filter for maximum number of missing terminal residues (''trim'') in read (default 50; 0 means no filter)' )
 parser.add_argument('-o','--out_tag','--out_file_tag',type=str,default='',help='Tag for outfile [default: derive from first bamfile]' )
 parser.add_argument('-n','--chunk_size', default=0, type=int, help='split with this number of sequences per chunk')
 parser.add_argument('--start_idx', default=0, type=int, help='only do the reference sequences from start_idx onwards [default all]')
@@ -233,16 +234,16 @@ for bam in args.bam:
         for n, (ref_nt, read_nt) in enumerate(zip(ref_sequence, seqa)):
             if ref_nt not in 'ACGT-': continue
             if read_nt not in 'ACGT-': continue
-            if read_nt == '-':
-                pos['del'].append(n)
-            elif ref_nt != read_nt:
-                pos['mut'].append(n)
+            if read_nt == '-':  pos['del'].append(n)
+            elif ref_nt != read_nt: pos['mut'].append(n)
 
         count += 1
         if count % 1000 == 0: print(f'Processed {count:10d} lines...  and number that pass filter: {count_filter:10d}')
 
         total_mutdel = len(pos['mut']) + len(pos['del'])
-        if args.mutdel_cutoff == 0 or total_mutdel <= args.mutdel_cutoff:
+        total_trim = seqa.count('.')
+        if (args.mutdel_cutoff == 0 or total_mutdel <= args.mutdel_cutoff) and \
+           (args.trim_cutoff == 0 or total_trim <= args.trim_cutoff):
             count_filter += 1
             for tag1 in ['mut','del']:
                 for tag2 in ['mut','del']:
@@ -261,7 +262,7 @@ for bam in args.bam:
         for fid in fid_set.values():
             fid.close()
 
-    print(f'Processed {count} reads. Filtered {count_filter} reads with <= {args.mutdel_cutoff} mutations+deletions.')
+    print(f'Processed {count} reads. Filtered {count_filter} reads with <= {args.mutdel_cutoff} mutations+deletions and <= {args.trim_cutoff} trimmed nts at termini.')
 
 os.remove(regions_file)
 
