@@ -69,7 +69,8 @@ def initialize_counts_2d(counts_2d, coverage, Nres):
             tag = tag1 + '_' + tag2
             counts_2d[tag] = []
             for n1 in range(Nres): counts_2d[tag].append([0]*Nres)
-    for n in range(Nres): coverage.append(0)
+    if len(coverage)==0:
+        for n in range(Nres): coverage.append(0)
 
 def output_to_index(ref_idx, counts_2d, coverage, fids):
     if ref_idx >= Nref or ref_idx >= end_idx:
