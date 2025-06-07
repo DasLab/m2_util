@@ -4,6 +4,8 @@ import os
 import shutil
 import gzip
 import re
+import tempfile
+import shutil
 
 parser = argparse.ArgumentParser(
                     prog = 'bam_to_2d.py',
@@ -139,17 +141,20 @@ def update_out_files(fids, out_tag, ref_idx, chunk_size, Nref):
             tag = f'{tag1}_{tag2}'
             fid_2d[tag] = gzip.open(f'{out_tag}{suffix}.counts_{tag}.txt.gz', 'wt')
 
-    fid_2d['mutdel'] = gzip.open(f'{out_tag}{suffix}.counts_mutdel.txt.gz', 'wt')
+    fid_2d['mutdel'] = gzip.open(f'{out_tag}{suffix}.counts_mutdel_mutdel.txt.gz', 'wt')
 
     fids.append(fid_1d)
     fids.append(fid_2d)
 
 # Create regions file for samtools
-regions_file = f'{args.sequences_fasta}.{start_idx:07d}_{end_idx:07d}.bed'
-with open(regions_file, 'w') as fid_regions:
-    for i in range(start_idx-1, end_idx):
-        fid_regions.write(f'{ref_headers[i]} 0 {len(ref_sequences[i])}\n')
-regions_tag = f' --regions-file {regions_file}'
+regions_tag = ''
+if start_idx > 0:
+    temp_dir = tempfile.mkdtemp()
+    regions_file = f'{temp_dir}/{args.sequences_fasta}.{start_idx:07d}_{end_idx:07d}.bed'
+    with open(regions_file, 'w') as fid_regions:
+        for i in range(start_idx-1, end_idx):
+            fid_regions.write(f'{ref_headers[i]} 0 {len(ref_sequences[i])}\n')
+    regions_tag = f' --regions-file {regions_file}'
 
 for bam in args.bam:
     print(f'Doing BAM file {bam}')
@@ -264,6 +269,7 @@ for bam in args.bam:
 
     print(f'Processed {count} reads. Filtered {count_filter} reads with <= {args.mutdel_cutoff} mutations+deletions and <= {args.trim_cutoff} trimmed nts at termini.')
 
-os.remove(regions_file)
+if len(regions_tag)>0: shutil.rmtree(temp_dir)
+
 
 
