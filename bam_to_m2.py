@@ -73,54 +73,60 @@ def initialize_counts_2d(counts_2d, coverage, Nres):
         for n in range(Nres): coverage.append(0)
     for n in range(Nres): coverage[n] = 0
 
-def output_to_index(ref_idx, counts_2d, coverage, fids):
-    if ref_idx >= Nref or ref_idx >= end_idx:
-        return (ref_idx, None)
+def output_to_index(ref_idx, counts_2d, coverage, fids, start_idx, end_idx):
+    #if ref_idx >= Nref or ref_idx >= end_idx:
+    #    return (ref_idx, None)
 
     Nres = len(ref_sequences[ref_idx])
     fid_1d = fids[0]
     fid_2d = fids[1]
 
-    counts_1d = {}
-    for tag in ['mut','del']:
-        counts_1d[tag] = [counts_2d[tag+'_'+tag][n][n] for n in range(Nres)]
-        fid_out = fid_1d[tag]
-        fid_out.write(",".join(map(str, counts_1d[tag])) + "\n")
+    ok_start_end_idx = start_idx==0 or (ref_idx+1 >= start_idx and (end_idx==0 or ref_idx+1 <=end_idx) )
+    if ok_start_end_idx:
+        counts_1d = {}
+        for tag in ['mut','del']:
+            counts_1d[tag] = [counts_2d[tag+'_'+tag][n][n] for n in range(Nres)]
+            fid_out = fid_1d[tag]
+            fid_out.write(",".join(map(str, counts_1d[tag])) + "\n")
 
-    for tag1 in ['mut','del']:
-        for tag2 in ['mut','del']:
-            tag = tag1 + '_' + tag2
-            fid_out = fid_2d[tag]
-            for n1 in range(Nres):
-                fid_out.write(",".join(map(str, counts_2d[tag][n1])) + "\n")
+        for tag1 in ['mut','del']:
+            for tag2 in ['mut','del']:
+                tag = tag1 + '_' + tag2
+                fid_out = fid_2d[tag]
+                for n1 in range(Nres):
+                    fid_out.write(",".join(map(str, counts_2d[tag][n1])) + "\n")
 
-    fid_out = fid_1d['coverage']
-    fid_out.write(",".join(map(str, coverage)) + "\n")
+        fid_out = fid_1d['coverage']
+        fid_out.write(",".join(map(str, coverage)) + "\n")
 
-    counts_2d_all = []
-    for n in range(Nres): counts_2d_all.append([0]*Nres)
-    fid_out = fid_2d['mutdel']
-    for n1 in range(Nres):
-        for n2 in range(Nres):
-            for tag1 in ['mut','del']:
-                for tag2 in ['mut','del']:
-                    counts_2d_all[n1][n2] += counts_2d[tag1+'_'+tag2][n1][n2]
-        fid_out.write(",".join(map(str, counts_2d_all[n1])) + "\n")
+        counts_2d_all = []
+        for n in range(Nres): counts_2d_all.append([0]*Nres)
+        fid_out = fid_2d['mutdel']
+        for n1 in range(Nres):
+            for n2 in range(Nres):
+                for tag1 in ['mut','del']:
+                    for tag2 in ['mut','del']:
+                        counts_2d_all[n1][n2] += counts_2d[tag1+'_'+tag2][n1][n2]
+                        fid_out.write(",".join(map(str, counts_2d_all[n1])) + "\n")
 
-    counts_1d['mutdel'] = [counts_1d['mut'][n]+counts_1d['del'][n] for n in range(Nres)]
-    fid_out = fid_1d['mutdel']
-    fid_out.write(",".join(map(str, counts_1d['mutdel'])) + "\n")
+        counts_1d['mutdel'] = [counts_1d['mut'][n]+counts_1d['del'][n] for n in range(Nres)]
+        fid_out = fid_1d['mutdel']
+        fid_out.write(",".join(map(str, counts_1d['mutdel'])) + "\n")
 
     ref_idx += 1
     if ref_idx < end_idx:
         initialize_counts_2d(counts_2d, coverage, len(ref_sequences[ref_idx]))
+
+    if chunk_size>0 and (ref_idx+1) % chunk_size == 1:
+        update_out_files( fids, out_tag,ref_idx, chunk_size, Nref, start_idx, end_idx)
 
     ref_sequence = None
     if ref_idx < len(ref_sequences) and ref_idx < end_idx:
         ref_sequence = ref_sequences[ref_idx]
     return (ref_idx, ref_sequence)
 
-def update_out_files(fids, out_tag, ref_idx, chunk_size, Nref):
+def update_out_files(fids, out_tag, ref_idx, chunk_size, Nref, start_idx, end_idx ):
+
     if len(fids) > 0:
         for fid_set in fids:
             for fid in fid_set.values():
@@ -128,7 +134,20 @@ def update_out_files(fids, out_tag, ref_idx, chunk_size, Nref):
         fids.clear()
 
     num_digits = len(str(Nref))
-    suffix = f'.{start_idx:0{num_digits}d}_{end_idx:0{num_digits}d}'
+
+    suffix=''
+    if chunk_size>0 and Nref>chunk_size:
+        chunk_start = ref_idx+1
+        chunk_end   = min( ref_idx + chunk_size, len(ref_headers))
+        suffix = f'.{chunk_start:0{num_digits}d}_{chunk_end:0{num_digits}d}'
+    if start_idx>0:
+        assert( chunk_size == 0 )
+        chunk_start = start_idx
+        chunk_end = Nref
+        if end_idx > 0: chunk_end = end_idx
+        suffix = f'.{chunk_start:0{num_digits}d}_{chunk_end:0{num_digits}d}'
+
+    if chunk_size>0 and ref_idx >= Nref: return
 
     fid_1d = {}
     fid_2d = {}
@@ -170,7 +189,7 @@ for bam in args.bam:
 
     line = fid_bam.readline()
     cols = line.split()
-    ref_idx = start_idx - 1
+    ref_idx = 0
     header = ''
 
     count = 0
@@ -181,7 +200,7 @@ for bam in args.bam:
     header = line.split()[2]
     ref_sequence = ref_sequences[ref_headers.index(header)]
     Nres = len(ref_sequence)
-    update_out_files(fids, out_tag, ref_idx, chunk_size, Nref)
+    update_out_files(fids, out_tag, ref_idx, chunk_size, Nref, start_idx, end_idx)
     counts_2d = {}
     coverage = []
     initialize_counts_2d(counts_2d, coverage, Nres)
@@ -191,12 +210,18 @@ for bam in args.bam:
         next_header = cols[2]
         if header != next_header:
             while ref_headers[ref_idx] != next_header:
-                ref_idx, ref_sequence = output_to_index(ref_idx, counts_2d, coverage, fids)
-                if ref_sequence is None:
-                    break
+                ref_idx, ref_sequence = output_to_index(ref_idx, counts_2d, coverage, fids, start_idx, end_idx)
             header = next_header
-            if ref_sequence is None:
-                break
+
+        ok_start = start_idx == 0 or ref_idx+1 >= start_idx
+        ok_end   = end_idx == 0 or ref_idx+1 <= end_idx
+
+        count += 1
+        if count % 1000 == 0: print(f'Processed {count:10d} lines...  and number that pass filter: {count_filter:10d}')
+
+        if not ok_start or not ok_end:
+            line = fid_bam.readline()
+            continue
 
         start_pos = int(cols[3])
         cigar = cols[5]
@@ -244,9 +269,6 @@ for bam in args.bam:
             if read_nt == '-':  pos['del'].append(n)
             elif ref_nt != read_nt: pos['mut'].append(n)
 
-        count += 1
-        if count % 1000 == 0: print(f'Processed {count:10d} lines...  and number that pass filter: {count_filter:10d}')
-
         total_mutdel = len(pos['mut']) + len(pos['del'])
         total_trim = seqa.count('.')
         if (args.mutdel_cutoff == 0 or total_mutdel <= args.mutdel_cutoff) and \
@@ -263,7 +285,7 @@ for bam in args.bam:
         line = fid_bam.readline()
 
     while ref_idx < end_idx:
-        ref_idx, ref_sequence = output_to_index(ref_idx, counts_2d, coverage, fids)
+        ref_idx, ref_sequence = output_to_index(ref_idx, counts_2d, coverage, fids, start_idx, end_idx)
 
     for fid_set in fids:
         for fid in fid_set.values():
