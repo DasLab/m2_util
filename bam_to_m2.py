@@ -107,7 +107,7 @@ def output_to_index(ref_idx, counts_2d, coverage, fids, start_idx, end_idx):
                 for tag1 in ['mut','del']:
                     for tag2 in ['mut','del']:
                         counts_2d_all[n1][n2] += counts_2d[tag1+'_'+tag2][n1][n2]
-                        fid_out.write(",".join(map(str, counts_2d_all[n1])) + "\n")
+            fid_out.write(",".join(map(str, counts_2d_all[n1])) + "\n")
 
         counts_1d['mutdel'] = [counts_1d['mut'][n]+counts_1d['del'][n] for n in range(Nres)]
         fid_out = fid_1d['mutdel']
