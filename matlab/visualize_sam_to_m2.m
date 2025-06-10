@@ -2,6 +2,11 @@ function  visualize_sam_to_m2( tag, maxscale, seqpos, SAVE_FIGURE, sequence_name
 %  visualize_sam_to_m2( tag, maxscale, seqpos );
 %  visualize_sam_to_m2( dir, maxscale, seqpos );
 %
+% Show mut/mut, mut/del, del/mut, and mut/mut M2-style plots.
+% 
+% If you know which one you want, just read that one in by using 
+%     READ_M2_SIGNAL and SHOW_M2_SIGNAL instead. 
+%
 % Inputs
 %  tag = (string) output tag of files from sam_to_m2.py. Files like
 %        tag.counts_del_del.txt, ... should exist
@@ -40,7 +45,7 @@ mut_all = load_txt([tag,'.counts_mut.txt'])';
 cov_all = load_txt([tag,'.coverage.txt']);
 Nres = size(m2_del_del_all,2);
 Nseq = size(m2_del_del_all,1)/Nres;
-fprintf('\n');
+if Nseq>1; fprintf('\n'); end;
 for i = 1:Nseq;
     idx = Nres*(i-1)+ [1:Nres];
     m2_del_del = m2_del_del_all(idx,:);
@@ -52,7 +57,7 @@ for i = 1:Nseq;
     mut = mut_all(:,i);
     sequence_name = '';
     if i <= length(sequence_names);  sequence_name=sequence_names{i}; end;
-    fprintf('%8d deletions (%7.4f) and %8d mutations for (%7.4f) coverage %8d  %s %s\n', sum( del ), sum(del)/max(cov), sum(mut), sum(mut)/max(cov), max(cov), tag, sequence_name);
+    fprintf('%8d deletions (%7.4f) and %8d mutations (%7.4f) for coverage %8d  %s %s\n', sum( del ), sum(del)/max(cov), sum(mut), sum(mut)/max(cov), max(cov), tag, sequence_name);
     if isempty(seqpos); seqpos = [1:length(del)]; end;
 
     set(figure(4),'color','white','pos', [50 50 1000 900]);
@@ -102,19 +107,3 @@ for i = 1:Nseq;
     %if ~SAVE_FIGURE & (i < Nseq); pause; end;
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function x = load_txt(infile);
-% load infile -- gunzip if necessary.
-x = [];
-infile_gz = '';
-if ~exist(infile,'file')
-    infile_gz = [infile,'.gz'];
-    assert( exist( infile_gz,'file' ));
-    %system(['gunzip -k ',infile_gz] );
-    gunzip(infile_gz)
-    assert( exist( infile,'file' ));
-end
-x = load( infile );
-if length(infile_gz)>0
-    delete(infile);
-end
