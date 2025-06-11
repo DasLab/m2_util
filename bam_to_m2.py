@@ -8,7 +8,7 @@ import tempfile
 import shutil
 
 parser = argparse.ArgumentParser(
-                    prog = 'bam_to_2d.py',
+                    prog = 'bam_to_m2.py',
                     description = 'Processes BAM file to create 1D and 2D mut/del profiles',
                     epilog = 'Extremely basic processing of CIGAR string in bowtie2 BAM file to produce alignments and then coding.')
 
