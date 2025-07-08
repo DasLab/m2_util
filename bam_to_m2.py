@@ -190,19 +190,16 @@ for bam in args.bam:
     line = fid_bam.readline()
     cols = line.split()
     ref_idx = 0
+    ref_sequence = ref_sequences[0]
     header = ''
-
     count = 0
     count_filter = 0
-
     fids = []
-
-    header = line.split()[2]
-    ref_sequence = ref_sequences[ref_headers.index(header)]
-    Nres = len(ref_sequence)
     update_out_files(fids, out_tag, ref_idx, chunk_size, Nref, start_idx, end_idx)
+
     counts_2d = {}
     coverage = []
+    Nres = len( ref_sequence )
     initialize_counts_2d(counts_2d, coverage, Nres)
 
     while line:
@@ -271,6 +268,7 @@ for bam in args.bam:
 
         total_mutdel = len(pos['mut']) + len(pos['del'])
         total_trim = seqa.count('.')
+
         if (args.mutdel_cutoff == 0 or total_mutdel <= args.mutdel_cutoff) and \
            (args.trim_cutoff == 0 or total_trim <= args.trim_cutoff):
             count_filter += 1
