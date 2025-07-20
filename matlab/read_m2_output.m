@@ -39,11 +39,11 @@ end
 
 %% Read in all experimental conditions, just mutdel/mutdel
 if ~exist('tags','var') | isempty(tags)
-    files=dir([filedir,'/*.coverage.txt.gz']);
+    files=dir([filedir,'/*.coverage.txt*']);
     %all_m2 = {}; all_counts = {}; all_coverage = {};
     tags = {};
     for i = 1:length(files)
-        tags{i}=strrep(files(i).name,'.coverage.txt.gz','');
+        tags{i}=strrep(strrep(files(i).name,'.coverage.txt',''),'.gz','');
     end
 end
 for i = 1:length(tags)

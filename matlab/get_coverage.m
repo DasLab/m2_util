@@ -13,19 +13,20 @@ function coverage = get_coverage( all_coverage, SHOW_PLOT )
 %                 of the conditions
 %
 %
+if ~exist('SHOW_PLOT','var'); SHOW_PLOT = 0; end;
 coverage = [];
 for n = 1:length(all_coverage); 
     coverage(:,n) = max(all_coverage{n},[],2);
 end
 
-
 if SHOW_PLOT
     figure(3);
     set(gcf,'color','white'); clf
-    [~,sortidx] = sort(coverage,'descend');
-    imagesc(  all_coverage{1}(sortidx',:),[0 max(coverage(:))])
+    [~,sortidx] = sort(sum(coverage'),'descend');
+    imagesc(  all_coverage{1}(sortidx',:),[0 max( all_coverage{1}(:))])
     xlabel('Position');
-    ylabel('Coverage');
+    ylabel('Sequence (ordered by coverage)');
+    title( 'Coverage')
     colormap(parula)
     colorbar();
 end
