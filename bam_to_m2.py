@@ -5,7 +5,6 @@ import shutil
 import gzip
 import re
 import tempfile
-import shutil
 
 parser = argparse.ArgumentParser(
                     prog = 'bam_to_m2.py',
@@ -50,6 +49,7 @@ def read_fasta(fasta_file):
 ref_headers = [header.split()[0] for header in ref_headers]
 ref_sequences = [sequence.replace('U','T') for sequence in ref_sequences] # need to convert to DNA!
 Nref = len(ref_headers)
+Nres = max( [ len(x) for x in ref_sequences] )
 
 if len(args.bam)>1 and len(args.out_tag)>1:
     print('With multiple bam files, cannot supply --out_tag. Rerun without --out_tag and output files will have tags based on .bam files')
@@ -77,7 +77,6 @@ def output_to_index(ref_idx, counts_2d, coverage, fids, start_idx, end_idx):
     #if ref_idx >= Nref or ref_idx >= end_idx:
     #    return (ref_idx, None)
 
-    Nres = len(ref_sequences[ref_idx])
     fid_1d = fids[0]
     fid_2d = fids[1]
 
@@ -115,7 +114,7 @@ def output_to_index(ref_idx, counts_2d, coverage, fids, start_idx, end_idx):
 
     ref_idx += 1
     if ref_idx < end_idx:
-        initialize_counts_2d(counts_2d, coverage, len(ref_sequences[ref_idx]))
+        initialize_counts_2d(counts_2d, coverage, Nres)
 
     if chunk_size>0 and (ref_idx+1) % chunk_size == 1:
         update_out_files( fids, out_tag,ref_idx, chunk_size, Nref, start_idx, end_idx)
@@ -199,7 +198,6 @@ for bam in args.bam:
 
     counts_2d = {}
     coverage = []
-    Nres = len( ref_sequence )
     initialize_counts_2d(counts_2d, coverage, Nres)
 
     while line:
