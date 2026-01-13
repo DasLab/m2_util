@@ -7,6 +7,9 @@ Utilities to extra mutate-and-map 2D maps from big library sequencing runs
  - [ ] provide M2 example
  - [ ] provide MOHCA example
  - [ ] convert MATLAB visualization steps into python and provide example notebook.
+ - [ ] Coverage really should be saved as a 2D matrix for each construct, not 1D to allow for proper normalizations.
+
+Note: some of the above has been implemented in C in the [cmuts code](https://github.com/hmblair/cmuts).
 
 ## Workflow
 
