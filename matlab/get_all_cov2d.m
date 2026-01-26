@@ -1,5 +1,5 @@
-function [all_cov2d, all_cov2d_err] = get_all_cov2d( all_counts_3d, all_counts, all_coverage, BLANK_OUT5, BLANK_OUT3 );
-% [all_cov2d, all_cov2d_err] = get_all_cov2d( all_counts_3d, all_counts, all_coverage, BLANK_OUT5, BLANK_OUT3 );
+function [all_cov2d, all_cov2d_err] = get_all_cov2d( all_counts_3d, all_counts, all_coverage, BLANK_OUT5, BLANK_OUT3, FILTER_LOW_COVERAGE );
+% [all_cov2d, all_cov2d_err] = get_all_cov2d( all_counts_3d, all_counts, all_coverage, BLANK_OUT5, BLANK_OUT3, FILTER_LOW_COVERAGE );
 %
 % Derive cov2d = counts(i,j)/ counts(i) / counts(j) - 1
 % 
@@ -20,6 +20,8 @@ function [all_cov2d, all_cov2d_err] = get_all_cov2d( all_counts_3d, all_counts, 
 %                   sequences. 
 %  BLANK_OUT5 = Set to NaN this number of 5' residues. (Default 0)
 %  BLANK_OUT3 = Set to NaN number of 3' residues. (Default 0)
+%  FILTER_LOW_COVERAGE = Set to NaN columns and rows where coverage is less
+%                 than 1/2 of max coverage (Default 0)
 %
 % Outputs:
 %   all_cov2d = [cell of Nconditions arrays, size Nres x Nres x Nseq] cov2d for
@@ -44,7 +46,8 @@ for n = 1:length(all_counts)
     cov2d_err = NaN*ones(Nres,Nres,Nseq);
     for idx = 1:Nseq
         cvg=max(all_coverage{n}(idx,:)); % would be better if coverage was a 2D matrix?
-        c = cvg * r3(:,:,idx)./(r1(idx,:)'*r1(idx,:))-1;       
+        c = cvg * r3(:,:,idx)./(r1(idx,:)'*r1(idx,:))-1;
+        if FILTER_LOW_COVERAGE; c = filter_low_coverage( c, all_coverage{n}(idx,:) ); end
         cov2d(which_res,which_res,idx) = c(which_res,which_res);
 
         c_err = cvg * sqrt(1+r3(:,:,idx))./(r1(idx,:)'*r1(idx,:)); % assume noise in 2D counts dominate error
@@ -53,3 +56,16 @@ for n = 1:length(all_counts)
     all_cov2d{n} = cov2d;
     all_cov2d_err{n} = cov2d_err;
 end
+
+%%%%%%%%%%%%%%%%%%%
+function c = filter_low_coverage( c, coverage_1D )
+cvg = max( coverage_1D );
+badpos = find( coverage_1D < cvg/2 );
+c(badpos,  :) = nan;
+c( :, badpos) = nan;
+
+
+
+
+
+
